@@ -2,12 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { 
   VULNERABLE_PATIENT_RECORDS, 
   HOSPITALS_DATA, 
+  PRIMARY_CARE_CLINICS_DATA,
   WASHOUT_ROUTES_DATA, 
   DISTRICT_RISK_ASSESSMENT
 } from '../data/narathiwatDisasterData';
 import { 
   VulnerablePatient, 
   HospitalResource, 
+  PrimaryHealthClinic,
   WashoutRoute, 
   DistrictName, 
   RiskLevel 
@@ -24,6 +26,7 @@ interface EocDataContextType {
   // Primary relational state
   patients: VulnerablePatient[];
   hospitals: HospitalResource[];
+  clinics: PrimaryHealthClinic[];
   washouts: WashoutRoute[];
   selectedDistrict: DistrictName | null;
   setSelectedDistrict: (d: DistrictName | null) => void;
@@ -44,12 +47,23 @@ interface EocDataContextType {
   isDbSyncing: boolean;
   lastDbSyncTime: string;
 
-  // CRUD actions
+  // CRUD actions for Patients
   createPatient: (patient: VulnerablePatient) => Promise<boolean>;
   updatePatient: (patient: VulnerablePatient) => Promise<boolean>;
   deletePatient: (id: string) => Promise<boolean>;
-  toggleRoadStatus: (id: string) => Promise<boolean>;
+
+  // CRUD actions for Hospitals (13 รพ.)
+  createHospital: (hospital: HospitalResource) => Promise<boolean>;
   updateHospital: (id: string, updates: Partial<HospitalResource>) => Promise<boolean>;
+  deleteHospital: (id: string) => Promise<boolean>;
+
+  // CRUD actions for Primary Health Clinics (111 รพ.สต.)
+  createClinic: (clinic: PrimaryHealthClinic) => Promise<boolean>;
+  updateClinic: (id: string, updates: Partial<PrimaryHealthClinic>) => Promise<boolean>;
+  deleteClinic: (id: string) => Promise<boolean>;
+
+  // Road Washouts
+  toggleRoadStatus: (id: string) => Promise<boolean>;
 
   // Correlated Computed Properties (Interconnected relational data)
   districtStats: Record<DistrictName, {
@@ -89,6 +103,15 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return saved ? JSON.parse(saved) : HOSPITALS_DATA;
     } catch {
       return HOSPITALS_DATA;
+    }
+  });
+
+  const [clinics, setClinics] = useState<PrimaryHealthClinic[]>(() => {
+    try {
+      const saved = localStorage.getItem('eoc_sheet_clinics');
+      return saved ? JSON.parse(saved) : PRIMARY_CARE_CLINICS_DATA;
+    } catch {
+      return PRIMARY_CARE_CLINICS_DATA;
     }
   });
 
@@ -177,6 +200,10 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     localStorage.setItem('eoc_sheet_hospitals', JSON.stringify(hospitals));
   }, [hospitals]);
+
+  useEffect(() => {
+    localStorage.setItem('eoc_sheet_clinics', JSON.stringify(clinics));
+  }, [clinics]);
 
   useEffect(() => {
     localStorage.setItem('eoc_sheet_washouts', JSON.stringify(washouts));
@@ -297,15 +324,53 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return true;
   };
 
-  // 5. UPDATE HOSPITAL RESOURCE
+  // 5. HOSPITAL CRUD ACTIONS
+  const createHospital = async (newHosp: HospitalResource): Promise<boolean> => {
+    setHospitals(prev => [newHosp, ...prev]);
+    addSyncLog(`[Hospital:Create] เพิ่มโรงพยาบาล ${newHosp.name} (อ.${newHosp.district})`);
+    await dispatchWebhook('CREATE_HOSPITAL', newHosp);
+    return true;
+  };
+
   const updateHospital = async (id: string, updates: Partial<HospitalResource>): Promise<boolean> => {
     setHospitals(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
-    addSyncLog(`[Hospital Correlate] อัปเดตทรัพยากร รพ. ${id}`);
+    addSyncLog(`[Hospital:Update] อัปเดตทรัพยากร รพ. ${id}`);
     await dispatchWebhook('UPDATE_HOSPITAL', { id, ...updates });
     return true;
   };
 
-  // 6. SYNC DATABASE: Complete 2-Way Sync to Local Storage & Google Sheets Database
+  const deleteHospital = async (id: string): Promise<boolean> => {
+    const target = hospitals.find(h => h.id === id);
+    setHospitals(prev => prev.filter(h => h.id !== id));
+    addSyncLog(`[Hospital:Delete] ลบโรงพยาบาล ${target?.name || id}`);
+    await dispatchWebhook('DELETE_HOSPITAL', { id });
+    return true;
+  };
+
+  // 6. PRIMARY CARE CLINIC (รพ.สต.) CRUD ACTIONS
+  const createClinic = async (newClinic: PrimaryHealthClinic): Promise<boolean> => {
+    setClinics(prev => [newClinic, ...prev]);
+    addSyncLog(`[Clinic:Create] เพิ่ม ${newClinic.name} (อ.${newClinic.district})`);
+    await dispatchWebhook('CREATE_CLINIC', newClinic);
+    return true;
+  };
+
+  const updateClinic = async (id: string, updates: Partial<PrimaryHealthClinic>): Promise<boolean> => {
+    setClinics(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    addSyncLog(`[Clinic:Update] อัปเดตสถานะ รพ.สต. ${id}`);
+    await dispatchWebhook('UPDATE_CLINIC', { id, ...updates });
+    return true;
+  };
+
+  const deleteClinic = async (id: string): Promise<boolean> => {
+    const target = clinics.find(c => c.id === id);
+    setClinics(prev => prev.filter(c => c.id !== id));
+    addSyncLog(`[Clinic:Delete] ลบ ${target?.name || id}`);
+    await dispatchWebhook('DELETE_CLINIC', { id });
+    return true;
+  };
+
+  // 7. SYNC DATABASE: Complete 2-Way Sync to Local Storage & Google Sheets Database
   const syncDatabase = async (notify?: (msg: string) => void): Promise<boolean> => {
     setIsDbSyncing(true);
     addSyncLog('เริ่มกระบวนการซิงค์ข้อมูลเข้าระบบ / ฐานข้อมูล (2-WAY Full Sync)', 'PENDING');
@@ -318,6 +383,7 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await dispatchWebhook('BULK_SYNC', {
           patients,
           hospitals,
+          clinics,
           washouts
         });
       }
@@ -325,6 +391,7 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // 2. Persist state to local database
       localStorage.setItem('eoc_sheet_patients', JSON.stringify(patients));
       localStorage.setItem('eoc_sheet_hospitals', JSON.stringify(hospitals));
+      localStorage.setItem('eoc_sheet_clinics', JSON.stringify(clinics));
       localStorage.setItem('eoc_sheet_washouts', JSON.stringify(washouts));
 
       const now = new Date();
@@ -332,7 +399,7 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLastDbSyncTime(timeStr);
       setIsDbSyncing(false);
 
-      addSyncLog(`✓ ซิงค์ข้อมูลเข้าฐานข้อมูลระบบและ Sheet ID: ${SHEET_ID.slice(0, 8)}... สำเร็จ (${patients.length} เคส / 13 รพ.)`, 'SUCCESS');
+      addSyncLog(`✓ ซิงค์ข้อมูลเข้าฐานข้อมูลระบบและ Sheet ID: ${SHEET_ID.slice(0, 8)}... สำเร็จ (${patients.length} ผู้ป่วย / ${hospitals.length} รพ. / ${clinics.length} รพ.สต.)`, 'SUCCESS');
       if (notify) {
         notify(`✓ ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล สำเร็จเรียบร้อยแล้ว (${timeStr})`);
       }
@@ -426,6 +493,7 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         patients,
         hospitals,
+        clinics,
         washouts,
         selectedDistrict,
         setSelectedDistrict,
@@ -442,8 +510,13 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         createPatient,
         updatePatient,
         deletePatient,
-        toggleRoadStatus,
+        createHospital,
         updateHospital,
+        deleteHospital,
+        createClinic,
+        updateClinic,
+        deleteClinic,
+        toggleRoadStatus,
         districtStats,
         criticalHospitals,
         totalVulnerableCount,

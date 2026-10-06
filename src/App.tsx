@@ -227,6 +227,10 @@ function EocDashboardApp() {
       <HospitalDetailModal
         hospital={selectedHospital}
         onClose={() => setSelectedHospital(null)}
+        onEdit={(_hosp) => {
+          setSelectedHospital(null);
+          setActiveTab('hospitals');
+        }}
       />
 
       <EocReportModal

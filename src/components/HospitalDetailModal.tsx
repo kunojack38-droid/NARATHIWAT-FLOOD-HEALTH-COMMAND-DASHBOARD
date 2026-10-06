@@ -11,18 +11,21 @@ import {
   Bed, 
   Activity, 
   ShieldCheck, 
-  AlertTriangle 
+  AlertTriangle,
+  Edit3
 } from 'lucide-react';
 import { HospitalResource } from '../types/eoc';
 
 interface HospitalDetailModalProps {
   hospital: HospitalResource | null;
   onClose: () => void;
+  onEdit?: (hospital: HospitalResource) => void;
 }
 
 export const HospitalDetailModal: React.FC<HospitalDetailModalProps> = ({
   hospital,
-  onClose
+  onClose,
+  onEdit
 }) => {
   if (!hospital) return null;
 
@@ -196,7 +199,21 @@ export const HospitalDetailModal: React.FC<HospitalDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-slate-800 flex justify-end">
+        <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          {onEdit && (
+            <button
+              onClick={() => {
+                const target = hospital;
+                onClose();
+                onEdit(target);
+              }}
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+              title="แก้ไขข้อมูลทรัพยากร รพ. (Update CRUD)"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              แก้ไขทรัพยากร (Update CRUD)
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors"

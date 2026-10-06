@@ -33,9 +33,11 @@ import {
   HOSPITALS_DATA, 
   WASHOUT_ROUTES_DATA 
 } from '../data/narathiwatDisasterData';
-import { VulnerablePatient, VulnerableCategory, DistrictName, HospitalResource, WashoutRoute } from '../types/eoc';
+import { VulnerablePatient, VulnerableCategory, DistrictName, HospitalResource, PrimaryHealthClinic, WashoutRoute } from '../types/eoc';
 import { useEocData } from '../context/EocDataContext';
 import { AppsScriptWebhookModal } from './AppsScriptWebhookModal';
+import { HospitalEditModal } from './HospitalEditModal';
+import { ClinicEditModal } from './ClinicEditModal';
 
 interface SheetSyncHubModuleProps {
   onNotify?: (msg: string) => void;
@@ -50,6 +52,7 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
   const {
     patients,
     hospitals,
+    clinics,
     washouts,
     syncLogs,
     webhookUrl,
@@ -57,6 +60,12 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
     createPatient,
     updatePatient,
     deletePatient,
+    createHospital,
+    updateHospital,
+    deleteHospital,
+    createClinic,
+    updateClinic,
+    deleteClinic,
     toggleRoadStatus,
     addSyncLog,
     syncDatabase,
@@ -70,7 +79,7 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
   const [countdownSeconds, setCountdownSeconds] = useState<number>(30);
   const [syncStatus, setSyncStatus] = useState<'IDLE' | 'SYNCING' | 'SUCCESS' | 'ERROR'>('SUCCESS');
   const [lastSyncTime, setLastSyncTime] = useState<string>('06:30:00 น.');
-  const [activeSheetTab, setActiveSheetTab] = useState<'vulnerable' | 'hospitals' | 'washout'>('vulnerable');
+  const [activeSheetTab, setActiveSheetTab] = useState<'vulnerable' | 'hospitals' | 'clinics' | 'washout'>('vulnerable');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
 
@@ -82,6 +91,15 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<VulnerablePatient | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Hospital & Clinic CRUD Modals
+  const [isHospitalModalOpen, setIsHospitalModalOpen] = useState(false);
+  const [editingHospital, setEditingHospital] = useState<HospitalResource | null>(null);
+  const [deleteConfirmHospId, setDeleteConfirmHospId] = useState<string | null>(null);
+
+  const [isClinicModalOpen, setIsClinicModalOpen] = useState(false);
+  const [editingClinic, setEditingClinic] = useState<PrimaryHealthClinic | null>(null);
+  const [deleteConfirmClinicId, setDeleteConfirmClinicId] = useState<string | null>(null);
 
   // New Record Form State
   const [newPatientForm, setNewPatientForm] = useState({
@@ -199,6 +217,42 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
     triggerSync(`ลบแถวข้อมูล: ${target?.name || patientId}`);
   };
 
+  // CRUD HANDLERS FOR 13 HOSPITALS
+  const handleSaveHospital = async (h: HospitalResource, isNew: boolean) => {
+    if (isNew) {
+      await createHospital(h);
+    } else {
+      await updateHospital(h.id, h);
+    }
+    triggerSync(`${isNew ? 'เพิ่ม' : 'แก้ไข'}ข้อมูลโรงพยาบาล: ${h.name}`);
+    return true;
+  };
+
+  const handleDeleteHospital = async (id: string) => {
+    const target = hospitals.find(h => h.id === id);
+    await deleteHospital(id);
+    setDeleteConfirmHospId(null);
+    triggerSync(`ลบโรงพยาบาล: ${target?.name || id}`);
+  };
+
+  // CRUD HANDLERS FOR 111 PRIMARY CARE CLINICS (รพ.สต.)
+  const handleSaveClinic = async (c: PrimaryHealthClinic, isNew: boolean) => {
+    if (isNew) {
+      await createClinic(c);
+    } else {
+      await updateClinic(c.id, c);
+    }
+    triggerSync(`${isNew ? 'เพิ่ม' : 'แก้ไข'} รพ.สต.: ${c.name}`);
+    return true;
+  };
+
+  const handleDeleteClinic = async (id: string) => {
+    const target = clinics.find(c => c.id === id);
+    await deleteClinic(id);
+    setDeleteConfirmClinicId(null);
+    triggerSync(`ลบ รพ.สต.: ${target?.name || id}`);
+  };
+
   // Export CSV
   const handleExportCSV = () => {
     let csvContent = '';
@@ -211,6 +265,11 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
       csvContent = 'ID,HospitalName,District,Level,Risk,TotalBeds,OccupiedBeds,AutonomyHours,GeneratorHours,OxygenHours,WaterHours\n' +
         hospitals.map(h => 
           `"${h.id}","${h.name}","${h.district}","${h.level}","${h.risk}",${h.totalBeds},${h.occupiedBeds},${h.autonomyHours},${h.resources.generatorFuelHours},${h.resources.oxygenHours},${h.resources.waterHours}`
+        ).join('\n');
+    } else if (activeSheetTab === 'clinics') {
+      csvContent = 'ID,Name,District,Status,StaffCount,EmergencyKit,Generator,Phone,Lat,Lng\n' +
+        clinics.map(c => 
+          `"${c.id}","${c.name}","${c.district}","${c.status}",${c.staffCount},"${c.emergencyMedicineKit ? 'มี' : 'ขาด'}","${c.generatorAvailable ? 'มี' : 'ไม่มี'}","${c.phone}",${c.lat},${c.lng}`
         ).join('\n');
     } else {
       csvContent = 'RoadNo,Name,District,History,DepthCm,Status,BypassRoute\n' +
@@ -235,6 +294,27 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
       p.phone.includes(searchTerm) ||
       p.conditionDescription.toLowerCase().includes(searchTerm.toLowerCase());
     const matchDistrict = filterDistrict === 'all' || p.district === filterDistrict;
+    return matchSearch && matchDistrict;
+  });
+
+  // Filtered 13 Hospitals for CRUD
+  const filteredHospitals = hospitals.filter((h) => {
+    const matchSearch =
+      h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      h.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      h.district.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchDistrict = filterDistrict === 'all' || h.district === filterDistrict;
+    return matchSearch && matchDistrict;
+  });
+
+  // Filtered 111 Clinics for CRUD
+  const filteredClinics = clinics.filter((c) => {
+    const matchSearch =
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phone.includes(searchTerm);
+    const matchDistrict = filterDistrict === 'all' || c.district === filterDistrict;
     return matchSearch && matchDistrict;
   });
 
@@ -380,7 +460,7 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
               </span>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-300 border border-slate-800">
-              13 รพ. / 11 จุด
+              13 รพ. / 111 รพ.สต. / 11 จุด
             </span>
           </div>
         </div>
@@ -391,11 +471,25 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
         <div className="flex items-center gap-2">
           {/* Create Button (C in CRUD) */}
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              if (activeSheetTab === 'vulnerable') {
+                setIsCreateModalOpen(true);
+              } else if (activeSheetTab === 'hospitals') {
+                setEditingHospital(null);
+                setIsHospitalModalOpen(true);
+              } else if (activeSheetTab === 'clinics') {
+                setEditingClinic(null);
+                setIsClinicModalOpen(true);
+              }
+            }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>เพิ่มข้อมูลใหม่ (Create)</span>
+            <span>
+              {activeSheetTab === 'vulnerable' ? 'เพิ่มผู้ป่วย (Create)' :
+               activeSheetTab === 'hospitals' ? 'เพิ่มโรงพยาบาล (Create)' :
+               activeSheetTab === 'clinics' ? 'เพิ่ม รพ.สต. (Create)' : 'เพิ่มข้อมูล'}
+            </span>
           </button>
 
           {/* Sheet Tab Switcher */}
@@ -415,6 +509,14 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
               }`}
             >
               ชีต 13 รพ. ({hospitals.length})
+            </button>
+            <button
+              onClick={() => setActiveSheetTab('clinics')}
+              className={`px-3 py-1 rounded-md font-semibold transition-colors ${
+                activeSheetTab === 'clinics' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ชีต 111 รพ.สต. ({clinics.length})
             </button>
             <button
               onClick={() => setActiveSheetTab('washout')}
@@ -557,23 +659,135 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
                   <th className="py-3 px-2 text-center">Safe Autonomy</th>
                   <th className="py-3 px-2 text-center">Generator</th>
                   <th className="py-3 px-2 text-center">ออกซิเจน O2</th>
-                  <th className="py-3 px-3 text-right">สถานะ</th>
+                  <th className="py-3 px-3 text-right">จัดการ (CRUD)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-sans">
-                {hospitals.map((h) => (
-                  <tr key={h.id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-3 font-semibold text-white">{h.name}</td>
-                    <td className="py-3 px-3 text-slate-300">อ.{h.district}</td>
-                    <td className="py-3 px-2 text-center font-mono">{h.level}</td>
-                    <td className="py-3 px-2 text-center font-bold text-amber-300">{h.risk}</td>
-                    <td className="py-3 px-2 text-center font-mono">{h.occupiedBeds}/{h.totalBeds}</td>
-                    <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400">{h.autonomyHours} ชม.</td>
-                    <td className="py-3 px-2 text-center font-mono">{h.resources.generatorFuelHours} ชม.</td>
-                    <td className="py-3 px-2 text-center font-mono">{h.resources.oxygenHours} ชม.</td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-400">SYNCED</td>
+                {filteredHospitals.length > 0 ? (
+                  filteredHospitals.map((h) => (
+                    <tr key={h.id} className="hover:bg-slate-800/40">
+                      <td className="py-3 px-3 font-semibold text-white">{h.name}</td>
+                      <td className="py-3 px-3 text-slate-300">อ.{h.district}</td>
+                      <td className="py-3 px-2 text-center font-mono">{h.level}</td>
+                      <td className="py-3 px-2 text-center font-bold text-amber-300">{h.risk}</td>
+                      <td className="py-3 px-2 text-center font-mono">{h.occupiedBeds}/{h.totalBeds}</td>
+                      <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400">{h.autonomyHours} ชม.</td>
+                      <td className="py-3 px-2 text-center font-mono">{h.resources.generatorFuelHours} ชม.</td>
+                      <td className="py-3 px-2 text-center font-mono">{h.resources.oxygenHours} ชม.</td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              setEditingHospital(h);
+                              setIsHospitalModalOpen(true);
+                            }}
+                            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 transition-colors"
+                            title="แก้ไขข้อมูลทรัพยากร รพ. (Update)"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmHospId(h.id)}
+                            className="p-1.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-400 transition-colors"
+                            title="ลบโรงพยาบาล (Delete)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-slate-500">
+                      ไม่พบข้อมูลโรงพยาบาลที่ตรงกับคำค้นหา
+                    </td>
                   </tr>
-                ))}
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {activeSheetTab === 'clinics' && (
+            <table className="w-full text-xs text-left border-collapse">
+              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                <tr>
+                  <th className="py-3 px-3">ชื่อ รพ.สต.</th>
+                  <th className="py-3 px-3">อำเภอ</th>
+                  <th className="py-3 px-2 text-center">สถานะความพร้อม</th>
+                  <th className="py-3 px-2 text-center">บุคลากร</th>
+                  <th className="py-3 px-2 text-center">ชุดเวชภัณฑ์ฉุกเฉิน</th>
+                  <th className="py-3 px-2 text-center">เครื่องปั่นไฟ</th>
+                  <th className="py-3 px-3">เบอร์ติดต่อ</th>
+                  <th className="py-3 px-3 text-right">จัดการ (CRUD)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-sans">
+                {filteredClinics.length > 0 ? (
+                  filteredClinics.map((c) => {
+                    const statusBadge = 
+                      c.status === 'normal' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
+                      c.status === 'watch' ? 'bg-amber-950 text-amber-300 border-amber-800' :
+                      c.status === 'risk' ? 'bg-orange-950 text-orange-300 border-orange-800' :
+                      'bg-rose-950 text-rose-300 border-rose-800';
+
+                    const statusText = 
+                      c.status === 'normal' ? 'เปิดบริการปกติ' :
+                      c.status === 'watch' ? 'เฝ้าระวัง' :
+                      c.status === 'risk' ? 'เสี่ยงตัดขาด' : 'ปิดชั่วคราว';
+
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-800/40">
+                        <td className="py-3 px-3 font-semibold text-white">{c.name}</td>
+                        <td className="py-3 px-3 text-slate-300">อ.{c.district}</td>
+                        <td className="py-3 px-2 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusBadge}`}>
+                            {statusText}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center font-mono">{c.staffCount} คน</td>
+                        <td className="py-3 px-2 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.emergencyMedicineKit ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}`}>
+                            {c.emergencyMedicineKit ? 'มี' : 'ขาด'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.generatorAvailable ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                            {c.generatorAvailable ? 'มี' : 'ไม่มี'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-300">{c.phone}</td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => {
+                                setEditingClinic(c);
+                                setIsClinicModalOpen(true);
+                              }}
+                              className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 transition-colors"
+                              title="แก้ไขข้อมูล รพ.สต. (Update)"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmClinicId(c.id)}
+                              className="p-1.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-400 transition-colors"
+                              title="ลบ รพ.สต. (Delete)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-500">
+                      ไม่พบข้อมูล รพ.สต. ที่ตรงกับคำค้นหา
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           )}
@@ -980,6 +1194,82 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
           </div>
         </div>
       )}
+
+      {/* MODAL: DELETE CONFIRMATION FOR HOSPITAL */}
+      {deleteConfirmHospId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-rose-800/80 rounded-2xl max-w-sm w-full p-5 text-slate-200 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertCircle className="w-6 h-6" />
+              <h3 className="font-bold text-white text-base">ยืนยันการลบโรงพยาบาล</h3>
+            </div>
+            <p className="text-xs text-slate-300">
+              ท่านต้องการลบข้อมูลโรงพยาบาลรหัส <strong className="text-white font-mono">{deleteConfirmHospId}</strong> ออกจากระบบและ Google Sheet ใช่หรือไม่?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteConfirmHospId(null)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => handleDeleteHospital(deleteConfirmHospId)}
+                className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                ยืนยันการลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DELETE CONFIRMATION FOR CLINIC */}
+      {deleteConfirmClinicId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-rose-800/80 rounded-2xl max-w-sm w-full p-5 text-slate-200 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertCircle className="w-6 h-6" />
+              <h3 className="font-bold text-white text-base">ยืนยันการลบ รพ.สต.</h3>
+            </div>
+            <p className="text-xs text-slate-300">
+              ท่านต้องการลบข้อมูล รพ.สต. รหัส <strong className="text-white font-mono">{deleteConfirmClinicId}</strong> ออกจากระบบและ Google Sheet ใช่หรือไม่?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteConfirmClinicId(null)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => handleDeleteClinic(deleteConfirmClinicId)}
+                className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                ยืนยันการลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hospital Edit / Create Modal */}
+      <HospitalEditModal
+        isOpen={isHospitalModalOpen}
+        hospital={editingHospital}
+        onClose={() => setIsHospitalModalOpen(false)}
+        onSave={handleSaveHospital}
+      />
+
+      {/* Clinic Edit / Create Modal */}
+      <ClinicEditModal
+        isOpen={isClinicModalOpen}
+        clinic={editingClinic}
+        onClose={() => setIsClinicModalOpen(false)}
+        onSave={handleSaveClinic}
+      />
 
       {/* Apps Script Webhook Modal */}
       <AppsScriptWebhookModal

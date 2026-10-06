@@ -46,6 +46,7 @@ export const AppsScriptWebhookModal: React.FC<AppsScriptWebhookModalProps> = ({
 var SHEET_ID = '17M9s5TbsJgvFtHGp8woq80sT3TkP6y_oclhguGUUkkA';
 var SHEET_PATIENTS = 'ผู้ป่วยเปราะบาง';
 var SHEET_HOSPITALS = '13_โรงพยาบาล';
+var SHEET_CLINICS = '111_รพสต_หน่วยบริการ';
 var SHEET_WASHOUTS = 'จุดตัดขาด_11_จุด';
 var SHEET_LOGS = 'ประวัติการซิงค์_Log';
 
@@ -54,6 +55,7 @@ function doGet(e) {
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var pSheet = ss.getSheetByName(SHEET_PATIENTS);
     var hSheet = ss.getSheetByName(SHEET_HOSPITALS);
+    var cSheet = ss.getSheetByName(SHEET_CLINICS);
     var wSheet = ss.getSheetByName(SHEET_WASHOUTS);
 
     return ContentService.createTextOutput(JSON.stringify({
@@ -63,6 +65,7 @@ function doGet(e) {
       data: {
         patients: pSheet ? readSheetAsObjects(pSheet) : [],
         hospitals: hSheet ? readSheetAsObjects(hSheet) : [],
+        clinics: cSheet ? readSheetAsObjects(cSheet) : [],
         washouts: wSheet ? readSheetAsObjects(wSheet) : []
       }
     })).setMimeType(ContentService.MimeType.JSON);
@@ -130,6 +133,94 @@ function doPost(e) {
         }
         msg = 'Deleted patient ' + data.id;
       }
+    } else if (action === 'CREATE_HOSPITAL' || action === 'UPDATE_HOSPITAL') {
+      var hSheet = ss.getSheetByName(SHEET_HOSPITALS);
+      if (hSheet && data) {
+        var vals = hSheet.getDataRange().getValues();
+        var found = false;
+        for (var r = 1; r < vals.length; r++) {
+          if (vals[r][0] == data.id) {
+            hSheet.getRange(r + 1, 1, 1, 14).setValues([[
+              data.id, data.name, data.district, data.level, data.risk,
+              data.totalBeds, data.occupiedBeds, data.autonomyHours,
+              data.resources ? data.resources.generatorFuelHours : 48,
+              data.resources ? data.resources.oxygenHours : 48,
+              data.resources ? data.resources.waterHours : 48,
+              data.resources ? data.resources.criticalMedicineDays : 30,
+              data.contact ? data.contact.staffReadinessPercent : 90,
+              Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+            ]]);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          hSheet.appendRow([
+            data.id, data.name, data.district, data.level, data.risk,
+            data.totalBeds, data.occupiedBeds, data.autonomyHours,
+            data.resources ? data.resources.generatorFuelHours : 48,
+            data.resources ? data.resources.oxygenHours : 48,
+            data.resources ? data.resources.waterHours : 48,
+            data.resources ? data.resources.criticalMedicineDays : 30,
+            data.contact ? data.contact.staffReadinessPercent : 90,
+            Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+          ]);
+        }
+        msg = 'Saved hospital ' + data.name;
+      }
+    } else if (action === 'DELETE_HOSPITAL') {
+      var hSheet = ss.getSheetByName(SHEET_HOSPITALS);
+      if (hSheet && data && data.id) {
+        var vals = hSheet.getDataRange().getValues();
+        for (var r = 1; r < vals.length; r++) {
+          if (vals[r][0] == data.id) {
+            hSheet.deleteRow(r + 1);
+            break;
+          }
+        }
+        msg = 'Deleted hospital ' + data.id;
+      }
+    } else if (action === 'CREATE_CLINIC' || action === 'UPDATE_CLINIC') {
+      var cSheet = ss.getSheetByName(SHEET_CLINICS);
+      if (cSheet && data) {
+        var vals = cSheet.getDataRange().getValues();
+        var found = false;
+        for (var r = 1; r < vals.length; r++) {
+          if (vals[r][0] == data.id) {
+            cSheet.getRange(r + 1, 1, 1, 11).setValues([[
+              data.id, data.name, data.district, data.status, data.staffCount,
+              data.emergencyMedicineKit ? 'มี' : 'ขาด',
+              data.generatorAvailable ? 'มี' : 'ไม่มี',
+              data.phone || '', data.lat || '', data.lng || '',
+              Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+            ]]);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          cSheet.appendRow([
+            data.id, data.name, data.district, data.status, data.staffCount,
+            data.emergencyMedicineKit ? 'มี' : 'ขาด',
+            data.generatorAvailable ? 'มี' : 'ไม่มี',
+            data.phone || '', data.lat || '', data.lng || '',
+            Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss')
+          ]);
+        }
+        msg = 'Saved clinic ' + data.name;
+      }
+    } else if (action === 'DELETE_CLINIC') {
+      var cSheet = ss.getSheetByName(SHEET_CLINICS);
+      if (cSheet && data && data.id) {
+        var vals = cSheet.getDataRange().getValues();
+        for (var r = 1; r < vals.length; r++) {
+          if (vals[r][0] == data.id) {
+            cSheet.deleteRow(r + 1);
+            break;
+          }
+        }
+        msg = 'Deleted clinic ' + data.id;
+      }
     }
 
     logAction(ss, action, msg, payload.user || 'EOC System');
@@ -151,6 +242,8 @@ function setupSpreadsheet() {
   setupHeaders(pSheet, ['รหัส', 'ชื่อ - สกุล', 'อายุ', 'กลุ่มโรค', 'อาการ', 'ที่อยู่', 'หมู่', 'ตำบล', 'อำเภอ', 'เบอร์โทร', 'เบอร์ญาติ', 'อสม.', 'Triage', 'สถานะอพยพ', 'ปลายทางส่งต่อ', 'อัปเดตล่าสุด']);
   var hSheet = ss.getSheetByName(SHEET_HOSPITALS) || ss.insertSheet(SHEET_HOSPITALS);
   setupHeaders(hSheet, ['รหัส', 'ชื่อ รพ.', 'อำเภอ', 'ระดับ', 'ความเสี่ยง', 'เตียงทั้งหมด', 'เตียงครอง', 'Autonomy ชม.', 'น้ำมัน ชม.', 'O2 ชม.', 'น้ำ ชม.', 'ยา วัน', 'บุคลากร %', 'อัปเดต']);
+  var cSheet = ss.getSheetByName(SHEET_CLINICS) || ss.insertSheet(SHEET_CLINICS);
+  setupHeaders(cSheet, ['รหัส รพ.สต.', 'ชื่อ รพ.สต.', 'อำเภอ', 'สถานะ', 'บุคลากร', 'ชุดเวชภัณฑ์', 'เครื่องปั่นไฟ', 'เบอร์โทร', 'Lat', 'Lng', 'อัปเดต']);
   var wSheet = ss.getSheetByName(SHEET_WASHOUTS) || ss.insertSheet(SHEET_WASHOUTS);
   setupHeaders(wSheet, ['สายทาง', 'จุดตัดขาด', 'อำเภอ', 'ประวัติ 3 ปี', 'น้ำท่วม ซม.', 'สถานะ', 'ทางเลี่ยง', 'Lat', 'Lng', 'อัปเดต']);
   var lSheet = ss.getSheetByName(SHEET_LOGS) || ss.insertSheet(SHEET_LOGS);

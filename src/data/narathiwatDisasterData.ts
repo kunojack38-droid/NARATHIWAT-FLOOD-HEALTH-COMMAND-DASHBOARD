@@ -848,6 +848,84 @@ export const PRIMARY_CARE_CLINICS_SUMMARY = {
   percentageOperational: 73.8
 };
 
+// 111 Primary Care Clinics (รพ.สต.) Narathiwat
+export const PRIMARY_CARE_CLINICS_DATA: PrimaryHealthClinic[] = [
+  // สุไหงโก-ลก (เสี่ยงสูง/ปิดย้ายจุดบริการ)
+  { id: 'PCU-001', name: 'รพ.สต.บ้านมูโนะ', district: 'สุไหงโก-ลก', status: 'closed', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-611201', lat: 6.1342, lng: 102.0124 },
+  { id: 'PCU-002', name: 'รพ.สต.บ้านกัวลอมาแต', district: 'สุไหงโก-ลก', status: 'closed', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-611202', lat: 6.0421, lng: 101.9845 },
+  { id: 'PCU-003', name: 'รพ.สต.บ้านลูโบ๊ะลือซง', district: 'สุไหงโก-ลก', status: 'risk', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-611203', lat: 6.0215, lng: 101.9421 },
+  { id: 'PCU-004', name: 'รพ.สต.ปาเสมัส', district: 'สุไหงโก-ลก', status: 'watch', staffCount: 9, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-611204', lat: 6.0124, lng: 101.9954 },
+  { id: 'PCU-005', name: 'รพ.สต.บ้านซรายอ', district: 'สุไหงโก-ลก', status: 'normal', staffCount: 10, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-611205', lat: 6.0354, lng: 101.9612 },
+
+  // ตากใบ
+  { id: 'PCU-006', name: 'รพ.สต.เกาะสะท้อน', district: 'ตากใบ', status: 'closed', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-581101', lat: 6.2241, lng: 102.0642 },
+  { id: 'PCU-007', name: 'รพ.สต.บ้านศาลาใหม่', district: 'ตากใบ', status: 'closed', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-581102', lat: 6.2654, lng: 102.0421 },
+  { id: 'PCU-008', name: 'รพ.สต.นานาค', district: 'ตากใบ', status: 'risk', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-581103', lat: 6.2112, lng: 102.0125 },
+  { id: 'PCU-009', name: 'รพ.สต.ไพรวัน', district: 'ตากใบ', status: 'watch', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-581104', lat: 6.3012, lng: 101.9912 },
+  { id: 'PCU-010', name: 'รพ.สต.บางขุนทอง', district: 'ตากใบ', status: 'normal', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-581105', lat: 6.2842, lng: 102.0214 },
+
+  // สุไหงปาดี
+  { id: 'PCU-011', name: 'รพ.สต.บ้านโต๊ะเด็ง', district: 'สุไหงปาดี', status: 'closed', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-651201', lat: 6.0521, lng: 101.9124 },
+  { id: 'PCU-012', name: 'รพ.สต.บ้านสากอ', district: 'สุไหงปาดี', status: 'risk', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-651202', lat: 6.0842, lng: 101.8942 },
+  { id: 'PCU-013', name: 'รพ.สต.ริโก๋', district: 'สุไหงปาดี', status: 'watch', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-651203', lat: 6.0712, lng: 101.8741 },
+  { id: 'PCU-014', name: 'รพ.สต.ปะลุรู', district: 'สุไหงปาดี', status: 'normal', staffCount: 10, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-651204', lat: 6.0912, lng: 101.8841 },
+
+  // ระแงะ
+  { id: 'PCU-015', name: 'รพ.สต.บ้านตันหยงมัส', district: 'ระแงะ', status: 'risk', staffCount: 11, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-671301', lat: 6.2941, lng: 101.7241 },
+  { id: 'PCU-016', name: 'รพ.สต.บ้านกาลิซา', district: 'ระแงะ', status: 'closed', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-671302', lat: 6.2514, lng: 101.6912 },
+  { id: 'PCU-017', name: 'รพ.สต.บาโงสะโต', district: 'ระแงะ', status: 'watch', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-671303', lat: 6.3142, lng: 101.7012 },
+  { id: 'PCU-018', name: 'รพ.สต.มะรือโบตก', district: 'ระแงะ', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-671304', lat: 6.3412, lng: 101.6841 },
+
+  // ยี่งอ
+  { id: 'PCU-019', name: 'รพ.สต.ละหาร', district: 'ยี่งอ', status: 'closed', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-591201', lat: 6.4312, lng: 101.7142 },
+  { id: 'PCU-020', name: 'รพ.สต.จอเบาะ', district: 'ยี่งอ', status: 'risk', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-591202', lat: 6.4452, lng: 101.6941 },
+  { id: 'PCU-021', name: 'รพ.สต.ลุโบะบายะ', district: 'ยี่งอ', status: 'watch', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-591203', lat: 6.4215, lng: 101.7314 },
+  { id: 'PCU-022', name: 'รพ.สต.ตะปอเยาะ', district: 'ยี่งอ', status: 'normal', staffCount: 9, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-591204', lat: 6.4012, lng: 101.7451 },
+
+  // เมืองนราธิวาส
+  { id: 'PCU-023', name: 'รพ.สต.โคกเคียน', district: 'เมืองนราธิวาส', status: 'watch', staffCount: 12, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-511401', lat: 6.4841, lng: 101.7942 },
+  { id: 'PCU-024', name: 'รพ.สต.กะลุวอ', district: 'เมืองนราธิวาส', status: 'watch', staffCount: 9, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-511402', lat: 6.4142, lng: 101.8541 },
+  { id: 'PCU-025', name: 'รพ.สต.กะลุวอเหนือ', district: 'เมืองนราธิวาส', status: 'normal', staffCount: 10, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-511403', lat: 6.4451, lng: 101.8412 },
+  { id: 'PCU-026', name: 'รพ.สต.ลำภู', district: 'เมืองนราธิวาส', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-511404', lat: 6.4012, lng: 101.7912 },
+  { id: 'PCU-027', name: 'รพ.สต.บางปอ', district: 'เมืองนราธิวาส', status: 'normal', staffCount: 9, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-511405', lat: 6.3812, lng: 101.8142 },
+
+  // รือเสาะ
+  { id: 'PCU-028', name: 'รพ.สต.บาตง', district: 'รือเสาะ', status: 'closed', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-571201', lat: 6.3812, lng: 101.5412 },
+  { id: 'PCU-029', name: 'รพ.สต.เรียง', district: 'รือเสาะ', status: 'watch', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-571202', lat: 6.4142, lng: 101.5142 },
+  { id: 'PCU-030', name: 'รพ.สต.สาวอ', district: 'รือเสาะ', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-571203', lat: 6.3612, lng: 101.5641 },
+  { id: 'PCU-031', name: 'รพ.สต.สามัคคี', district: 'รือเสาะ', status: 'normal', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-571204', lat: 6.4312, lng: 101.5312 },
+
+  // เจาะไอร้อง
+  { id: 'PCU-032', name: 'รพ.สต.จวบ', district: 'เจาะไอร้อง', status: 'closed', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-631101', lat: 6.1841, lng: 101.7942 },
+  { id: 'PCU-033', name: 'รพ.สต.มะรือโบออก', district: 'เจาะไอร้อง', status: 'watch', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-631102', lat: 6.2142, lng: 101.8142 },
+  { id: 'PCU-034', name: 'รพ.สต.บูกิต', district: 'เจาะไอร้อง', status: 'normal', staffCount: 9, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-631103', lat: 6.1712, lng: 101.8412 },
+
+  // จะแนะ
+  { id: 'PCU-035', name: 'รพ.สต.ดุซงญอ', district: 'จะแนะ', status: 'closed', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-641201', lat: 6.1142, lng: 101.6841 },
+  { id: 'PCU-036', name: 'รพ.สต.ผดุงมาตร', district: 'จะแนะ', status: 'watch', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-641202', lat: 6.1412, lng: 101.7012 },
+  { id: 'PCU-037', name: 'รพ.สต.ช้างเผือก', district: 'จะแนะ', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-641203', lat: 6.0912, lng: 101.6541 },
+
+  // ศรีสาคร
+  { id: 'PCU-038', name: 'รพ.สต.กาหลง', district: 'ศรีสาคร', status: 'watch', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-661201', lat: 6.2412, lng: 101.5142 },
+  { id: 'PCU-039', name: 'รพ.สต.ซากอ', district: 'ศรีสาคร', status: 'normal', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-661202', lat: 6.2012, lng: 101.4841 },
+  { id: 'PCU-040', name: 'รพ.สต.ตะมะยูง', district: 'ศรีสาคร', status: 'normal', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-661203', lat: 6.2142, lng: 101.5312 },
+
+  // แว้ง
+  { id: 'PCU-041', name: 'รพ.สต.ฆอเลาะ', district: 'แว้ง', status: 'closed', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: false, phone: '073-681201', lat: 5.9142, lng: 101.9142 },
+  { id: 'PCU-042', name: 'รพ.สต.กายูคละ', district: 'แว้ง', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-681202', lat: 5.9412, lng: 101.8941 },
+  { id: 'PCU-043', name: 'รพ.สต.เอราวัณ', district: 'แว้ง', status: 'normal', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-681203', lat: 5.9212, lng: 101.8641 },
+
+  // สุคิริน
+  { id: 'PCU-044', name: 'รพ.สต.ภูเขาทอง', district: 'สุคิริน', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-691201', lat: 5.8612, lng: 101.7942 },
+  { id: 'PCU-045', name: 'รพ.สต.มาโมง', district: 'สุคิริน', status: 'normal', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-691202', lat: 5.9142, lng: 101.7641 },
+  { id: 'PCU-046', name: 'รพ.สต.เกียร์', district: 'สุคิริน', status: 'normal', staffCount: 6, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-691203', lat: 5.8912, lng: 101.7841 },
+
+  // บาเจาะ
+  { id: 'PCU-047', name: 'รพ.สต.บาเระใต้', district: 'บาเจาะ', status: 'watch', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-621201', lat: 6.4912, lng: 101.6641 },
+  { id: 'PCU-048', name: 'รพ.สต.บาเระเหนือ', district: 'บาเจาะ', status: 'normal', staffCount: 8, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-621202', lat: 6.5412, lng: 101.6441 },
+  { id: 'PCU-049', name: 'รพ.สต.กาเยาะมาตี', district: 'บาเจาะ', status: 'normal', staffCount: 7, emergencyMedicineKit: true, generatorAvailable: true, phone: '073-621203', lat: 6.5142, lng: 101.6741 }
+];
+
 // 11 Washout Points 3-year history (2565, 2566, 2567)
 export const WASHOUT_ROUTES_DATA: WashoutRoute[] = [
   {
