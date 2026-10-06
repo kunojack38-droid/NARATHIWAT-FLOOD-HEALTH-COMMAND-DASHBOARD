@@ -6,8 +6,11 @@ import {
   RotateCw, 
   Menu,
   Settings,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Database,
+  Type
 } from 'lucide-react';
+import { useEocData } from '../context/EocDataContext';
 
 interface HeaderProps {
   activeTab: string;
@@ -19,6 +22,7 @@ interface HeaderProps {
   onToggleSidebarMobile: () => void;
   isSidebarCollapsed: boolean;
   onToggleSidebarCollapse: () => void;
+  onNotify?: (msg: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,8 +34,16 @@ export const Header: React.FC<HeaderProps> = ({
   isSimulating,
   onToggleSidebarMobile,
   isSidebarCollapsed,
-  onToggleSidebarCollapse
+  onToggleSidebarCollapse,
+  onNotify
 }) => {
+  const { 
+    fontSize, 
+    setFontSize, 
+    syncDatabase, 
+    isDbSyncing, 
+    lastDbSyncTime 
+  } = useEocData();
   const getTabLabel = (id: string) => {
     switch (id) {
       case 'overview': return 'EOC Cockpit Overview';
@@ -91,24 +103,74 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Section: Actions Deck */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Font Size Scaling Controls (เพิ่มขนาดอักษร) */}
+          <div className="hidden md:flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1" title="ปรับขนาดตัวอักษรของระบบ">
+            <Type className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5" />
+            <button
+              onClick={() => setFontSize('normal')}
+              className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all ${
+                fontSize === 'normal' 
+                  ? 'bg-emerald-600 text-white shadow-sm' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title="ขนาดตัวอักษรปกติ (100%)"
+            >
+              ปกติ
+            </button>
+            <button
+              onClick={() => setFontSize('large')}
+              className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all ${
+                fontSize === 'large' 
+                  ? 'bg-emerald-600 text-white shadow-sm' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title="เพิ่มขนาดตัวอักษรใหญ่ (115%)"
+            >
+              ใหญ่
+            </button>
+            <button
+              onClick={() => setFontSize('xlarge')}
+              className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all ${
+                fontSize === 'xlarge' 
+                  ? 'bg-emerald-600 text-white shadow-sm' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title="เพิ่มขนาดตัวอักษรใหญ่พิเศษ (130%) เหมาะสำหรับห้องบัญชาการ"
+            >
+              ใหญ่พิเศษ
+            </button>
+          </div>
+
+          {/* Database Sync Button (ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล) */}
+          <button
+            onClick={() => syncDatabase(onNotify)}
+            disabled={isDbSyncing}
+            title={`ซิงค์ข้อมูลผู้ป่วยเปราะบาง 1,284 ราย, 13 รพ. และจุดตัดขาด เข้าสู่ฐานข้อมูลระบบ (ล่าสุด: ${lastDbSyncTime})`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/60 transition-colors disabled:opacity-50"
+          >
+            <Database className={`w-3.5 h-3.5 ${isDbSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isDbSyncing ? 'กำลังซิงค์...' : 'ซิงค์ฐานข้อมูล'}</span>
+            <span className="sm:hidden">ซิงค์</span>
+          </button>
+
           {/* Simulate Refresh button */}
           <button
             onClick={onSimulateRefresh}
             title="จำลองอัปเดตข้อมูลเซนเซอร์ฝนและระดับน้ำแบบ Realtime"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 transition-colors"
           >
             <RotateCw className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin text-emerald-400' : ''}`} />
-            <span className="hidden sm:inline">ซิงค์เซนเซอร์</span>
+            <span className="hidden lg:inline">ซิงค์เซนเซอร์</span>
           </button>
 
           {/* Original Infographic Modal button */}
           <button
             onClick={onOpenInfographicModal}
             title="เปิดดูอินโฟกราฟิกทางการ สสจ.นราธิวาส ตัวจริง"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-300 bg-amber-950/60 hover:bg-amber-900/60 rounded-xl border border-amber-800/60 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-300 bg-amber-950/60 hover:bg-amber-900/60 rounded-xl border border-amber-800/60 transition-colors"
           >
             <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden md:inline">ต้นฉบับ สสจ.</span>
+            <span className="hidden lg:inline">ต้นฉบับ สสจ.</span>
           </button>
 
           {/* Settings shortcut button */}
@@ -128,9 +190,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* SitRep button */}
           <button
             onClick={onOpenReportModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md shadow-emerald-950/50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl shadow-sm transition-colors"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-3.5 h-3.5 text-emerald-400" />
             <span className="hidden sm:inline">ออกรายงาน SitRep</span>
             <span className="sm:hidden">SitRep</span>
           </button>

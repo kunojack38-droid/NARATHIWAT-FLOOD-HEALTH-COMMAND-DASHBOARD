@@ -2,5 +2,7 @@
   "name": "EOC นราธิวาส - ศูนย์บัญชาการเหตุการณ์สาธารณสุขอุทกภัย",
   "description": "ระบบเฝ้าระวัง ติดตาม และบัญชาการสถานการณ์อุทกภัย สำนักงานสาธารณสุขจังหวัดนราธิวาส เชื่อมโยงข้อมูล GISTDA, ปภ., ทรัพยากร 13 รพ. 111 รพ.สต. และผู้ป่วยเปราะบาง 1,284 ราย",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

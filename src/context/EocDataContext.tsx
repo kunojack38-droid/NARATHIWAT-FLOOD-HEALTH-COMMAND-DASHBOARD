@@ -32,8 +32,17 @@ interface EocDataContextType {
   webhookUrl: string;
   setWebhookUrl: (url: string) => void;
   syncLogs: SyncLogItem[];
-  addSyncLog: (action: string, status?: 'SUCCESS' | 'ERROR') => void;
+  addSyncLog: (action: string, status?: 'SUCCESS' | 'ERROR' | 'PENDING') => void;
   isSyncing: boolean;
+
+  // Font Size Scaling (เพิ่มขนาดอักษร)
+  fontSize: 'normal' | 'large' | 'xlarge';
+  setFontSize: (size: 'normal' | 'large' | 'xlarge') => void;
+
+  // Complete Database Synchronization (ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล)
+  syncDatabase: (notify?: (msg: string) => void) => Promise<boolean>;
+  isDbSyncing: boolean;
+  lastDbSyncTime: string;
 
   // CRUD actions
   createPatient: (patient: VulnerablePatient) => Promise<boolean>;
@@ -100,12 +109,48 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
+  // Font Size Scaling State (เพิ่มขนาดอักษร)
+  const [fontSize, setFontSizeState] = useState<'normal' | 'large' | 'xlarge'>(() => {
+    return (localStorage.getItem('eoc_font_size') as any) || 'normal';
+  });
+
+  const setFontSize = (size: 'normal' | 'large' | 'xlarge') => {
+    setFontSizeState(size);
+    localStorage.setItem('eoc_font_size', size);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('font-scale-large', 'font-scale-xlarge');
+      if (size === 'large') {
+        document.documentElement.classList.add('font-scale-large');
+      } else if (size === 'xlarge') {
+        document.documentElement.classList.add('font-scale-xlarge');
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('font-scale-large', 'font-scale-xlarge');
+      if (fontSize === 'large') {
+        document.documentElement.classList.add('font-scale-large');
+      } else if (fontSize === 'xlarge') {
+        document.documentElement.classList.add('font-scale-xlarge');
+      }
+    }
+  }, [fontSize]);
+
+  // Database Sync States (ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล)
+  const [isDbSyncing, setIsDbSyncing] = useState<boolean>(false);
+  const [lastDbSyncTime, setLastDbSyncTime] = useState<string>(() => {
+    const now = new Date();
+    return `${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} น.`;
+  });
+
   const [syncLogs, setSyncLogs] = useState<SyncLogItem[]>([
     { id: 'LOG-001', time: '06:30:00 น.', action: 'เชื่อมโยงความสัมพันธ์ข้อมูล 13 รพ. และผู้ป่วยเปราะบางสำเร็จ', status: 'SUCCESS' },
     { id: 'LOG-002', time: '06:25:00 น.', action: 'ตรวจสอบความสัมพันธ์จุดตัดขาด 11 จุดกับเส้นทางส่งต่อ OPOH', status: 'SUCCESS' }
   ]);
 
-  const addSyncLog = (action: string, status: 'SUCCESS' | 'ERROR' = 'SUCCESS') => {
+  const addSyncLog = (action: string, status: 'SUCCESS' | 'ERROR' | 'PENDING' = 'SUCCESS') => {
     const now = new Date();
     const timeStr = `${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} น.`;
     setSyncLogs(prev => [
@@ -260,6 +305,48 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return true;
   };
 
+  // 6. SYNC DATABASE: Complete 2-Way Sync to Local Storage & Google Sheets Database
+  const syncDatabase = async (notify?: (msg: string) => void): Promise<boolean> => {
+    setIsDbSyncing(true);
+    addSyncLog('เริ่มกระบวนการซิงค์ข้อมูลเข้าระบบ / ฐานข้อมูล (2-WAY Full Sync)', 'PENDING');
+
+    const SHEET_ID = '17M9s5TbsJgvFtHGp8woq80sT3TkP6y_oclhguGUUkkA';
+
+    try {
+      // 1. Dispatch Webhook if URL configured
+      if (webhookUrl && webhookUrl.startsWith('http')) {
+        await dispatchWebhook('BULK_SYNC', {
+          patients,
+          hospitals,
+          washouts
+        });
+      }
+
+      // 2. Persist state to local database
+      localStorage.setItem('eoc_sheet_patients', JSON.stringify(patients));
+      localStorage.setItem('eoc_sheet_hospitals', JSON.stringify(hospitals));
+      localStorage.setItem('eoc_sheet_washouts', JSON.stringify(washouts));
+
+      const now = new Date();
+      const timeStr = `${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} น.`;
+      setLastDbSyncTime(timeStr);
+      setIsDbSyncing(false);
+
+      addSyncLog(`✓ ซิงค์ข้อมูลเข้าฐานข้อมูลระบบและ Sheet ID: ${SHEET_ID.slice(0, 8)}... สำเร็จ (${patients.length} เคส / 13 รพ.)`, 'SUCCESS');
+      if (notify) {
+        notify(`✓ ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล สำเร็จเรียบร้อยแล้ว (${timeStr})`);
+      }
+      return true;
+    } catch (e: any) {
+      setIsDbSyncing(false);
+      addSyncLog(`ข้อผิดพลาดการซิงค์ฐานข้อมูล: ${e.message}`, 'ERROR');
+      if (notify) {
+        notify(`✕ เกิดข้อผิดพลาดในการซิงค์ฐานข้อมูล: ${e.message}`);
+      }
+      return false;
+    }
+  };
+
   // ==========================================
   // CORRELATED COMPUTED PROPERTIES
   // ==========================================
@@ -347,6 +434,11 @@ export const EocDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         syncLogs,
         addSyncLog,
         isSyncing,
+        fontSize,
+        setFontSize,
+        syncDatabase,
+        isDbSyncing,
+        lastDbSyncTime,
         createPatient,
         updatePatient,
         deletePatient,

@@ -58,7 +58,10 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
     updatePatient,
     deletePatient,
     toggleRoadStatus,
-    addSyncLog
+    addSyncLog,
+    syncDatabase,
+    isDbSyncing,
+    lastDbSyncTime
   } = useEocData();
 
   // 2-Way Auto-Sync States
@@ -287,6 +290,16 @@ export const SheetSyncHubModule: React.FC<SheetSyncHubModuleProps> = ({ onNotify
               <span>เปิด Google Sheet</span>
               <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
             </a>
+
+            <button
+              onClick={() => syncDatabase()}
+              disabled={isDbSyncing}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs shadow-md transition-colors disabled:opacity-50"
+              title={`ซิงค์ข้อมูลเข้าระบบ/ฐานข้อมูล (ล่าสุด: ${lastDbSyncTime})`}
+            >
+              <Database className={`w-3.5 h-3.5 ${isDbSyncing ? 'animate-spin' : ''}`} />
+              <span>{isDbSyncing ? 'กำลังซิงค์...' : 'ซิงค์เข้าระบบ/ฐานข้อมูล'}</span>
+            </button>
 
             <button
               onClick={handleManualSyncNow}

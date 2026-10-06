@@ -107,6 +107,10 @@ function EocDashboardApp() {
           onToggleSidebarMobile={() => setIsOpenMobile(prev => !prev)}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebarCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+          onNotify={(msg) => {
+            setToastMessage(msg);
+            setTimeout(() => setToastMessage(null), 3500);
+          }}
         />
 
         {/* Global Toast Notification */}

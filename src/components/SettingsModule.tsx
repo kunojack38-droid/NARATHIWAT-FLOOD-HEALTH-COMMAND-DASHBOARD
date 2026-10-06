@@ -20,16 +20,19 @@ import {
   Smartphone,
   Eye,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Type
 } from 'lucide-react';
 import { AlertLevel } from '../types/eoc';
 import { AppsScriptWebhookModal } from './AppsScriptWebhookModal';
+import { useEocData } from '../context/EocDataContext';
 
 interface SettingsModuleProps {
   onNotify?: (msg: string) => void;
 }
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({ onNotify }) => {
+  const { fontSize, setFontSize, syncDatabase, isDbSyncing, lastDbSyncTime } = useEocData();
   const [isAppsScriptModalOpen, setIsAppsScriptModalOpen] = useState<boolean>(false);
   // Saved Configuration State (with localStorage fallback)
   const [sheetId, setSheetId] = useState<string>(() => {
@@ -72,7 +75,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onNotify }) => {
   const [radioVhfFrequency, setRadioVhfFrequency] = useState<string>('162.300 MHz (ข่ายสาธารณสุข)');
 
   const [isSaved, setIsSaved] = useState<boolean>(false);
-  const [activeSection, setActiveSection] = useState<'sheet' | 'map' | 'eoc' | 'comm' | 'backup'>('sheet');
+  const [activeSection, setActiveSection] = useState<'sheet' | 'map' | 'display' | 'eoc' | 'comm' | 'backup'>('sheet');
 
   const handleSaveSettings = () => {
     localStorage.setItem('eoc_settings_sheet_id', sheetId);
@@ -196,6 +199,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onNotify }) => {
           >
             <Layers className="w-4 h-4" />
             <span>แผนที่ Leaflet (ปลอด API Key)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection('display')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              activeSection === 'display'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+            }`}
+          >
+            <Type className="w-4 h-4" />
+            <span>ขนาดตัวอักษร & การแสดงผล</span>
           </button>
 
           <button
@@ -407,6 +422,115 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onNotify }) => {
                       <span>เส้นทางเลี่ยงสำรอง (Bypass Route) และจุดรับส่งทางอากาศยาน (Helipads)</span>
                     </li>
                   </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Font Size & Display (เพิ่มขนาดอักษร) */}
+          {activeSection === 'display' && (
+            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Type className="w-5 h-5 text-emerald-400" />
+                  การปรับขนาดตัวอักษรและการแสดงผล (Font Scaling & Readability)
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  ปรับขนาดตัวอักษรของระบบ EOC นราธิวาส สำหรับการอ่านที่ชัดเจนบนจอ Command Wall, แท็บเล็ต หรือโน้ตบุ๊กศูนย์บัญชาการ
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    เลือกระดับขนาดตัวอักษรของทั้งระบบ (System Font Size):
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { 
+                        id: 'normal', 
+                        label: 'ขนาดปกติ (Standard)', 
+                        percent: '100% (16px)', 
+                        desc: 'เหมาะสำหรับหน้าจอคอมพิวเตอร์ทั่วไป' 
+                      },
+                      { 
+                        id: 'large', 
+                        label: 'ขนาดใหญ่ (Large)', 
+                        percent: '115% (18px)', 
+                        desc: 'ตัวหนังสือใหญ่ อ่านง่าย สบายตา' 
+                      },
+                      { 
+                        id: 'xlarge', 
+                        label: 'ขนาดใหญ่พิเศษ (Extra Large)', 
+                        percent: '130% (20px)', 
+                        desc: 'เหมาะสำหรับจอใหญ่ / Command Wall ห้อง EOC' 
+                      }
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setFontSize(item.id as any);
+                          if (onNotify) {
+                            onNotify(`✓ ปรับขนาดตัวอักษรเป็น: ${item.label}`);
+                          }
+                        }}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                          fontSize === item.id
+                            ? 'bg-emerald-950/80 border-emerald-500 text-white ring-1 ring-emerald-500'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-sm text-white">{item.label}</span>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                            fontSize === item.id ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {item.percent}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview Box */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <span className="text-xs font-semibold text-slate-300 block">ตัวอย่างการแสดงผลข้อความตามขนาดปัจจุบัน:</span>
+                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
+                    <p className="font-bold text-white mb-1">
+                      ศูนย์ปฏิบัติการฉุกเฉินด้านการแพทย์และสาธารณสุข (EOC) จังหวัดนราธิวาส
+                    </p>
+                    <p className="text-slate-300">
+                      เฝ้าระวังผู้ป่วยกลุ่มเปราะบาง 1,284 ราย ครอบคลุม 13 อำเภอ และประสานงานส่งต่อผู้ป่วยผ่านเครือข่าย OPOH ปลอดภัย 100%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Direct Database Sync Action Card */}
+                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-emerald-400" />
+                      ซิงค์ข้อมูลเข้าระบบ / ฐานข้อมูลทันที (Sync to Database)
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      ซิงค์ข้อมูลผู้ป่วย, ทรัพยากร 13 รพ. และจุดตัดขาด 11 จุดเข้าฐานข้อมูลระบบและ Google Sheet ID ปัจจุบัน
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-mono mt-1">
+                      ซิงค์ล่าสุด: {lastDbSyncTime}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => syncDatabase(onNotify)}
+                    disabled={isDbSyncing}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/60 transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    <Database className={`w-3.5 h-3.5 ${isDbSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isDbSyncing ? 'กำลังซิงค์...' : 'ซิงค์ข้อมูลเดี๋ยวนี้'}</span>
+                  </button>
                 </div>
               </div>
             </div>

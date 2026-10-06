@@ -17,8 +17,11 @@ import {
   X, 
   PhoneCall, 
   CheckCircle2, 
-  Sparkles 
+  Sparkles,
+  Database,
+  Type
 } from 'lucide-react';
+import { useEocData } from '../context/EocDataContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -37,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   setIsOpenMobile
 }) => {
+  const { syncDatabase, isDbSyncing, fontSize, setFontSize, lastDbSyncTime } = useEocData();
   const navItems = [
     { 
       id: 'overview', 
@@ -275,6 +279,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 border-t border-slate-800/80 bg-slate-900/50 shrink-0">
           {(!isCollapsed || isOpenMobile) ? (
             <div className="space-y-2">
+              {/* Font Size Selector (เพิ่มขนาดอักษร) */}
+              <div className="bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-300 font-semibold">
+                  <Type className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>ขนาดอักษร:</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setFontSize('normal')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                      fontSize === 'normal'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                    title="ขนาดปกติ"
+                  >
+                    ปกติ
+                  </button>
+                  <button
+                    onClick={() => setFontSize('large')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                      fontSize === 'large'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                    title="ขนาดใหญ่ (+15%)"
+                  >
+                    ใหญ่
+                  </button>
+                  <button
+                    onClick={() => setFontSize('xlarge')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                      fontSize === 'xlarge'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                    title="ขนาดใหญ่พิเศษ (+30%)"
+                  >
+                    ใหญ่+
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => syncDatabase()}
+                disabled={isDbSyncing}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Database className={`w-3.5 h-3.5 ${isDbSyncing ? 'animate-spin' : ''}`} />
+                <span>{isDbSyncing ? 'กำลังซิงค์...' : 'ซิงค์ข้อมูลเข้าระบบ / ฐานข้อมูล'}</span>
+              </button>
+
               <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <PhoneCall className="w-4 h-4 text-rose-400 animate-pulse" />
@@ -286,14 +342,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono px-1">
-                <span>Sheet 2-WAY ID</span>
-                <span className="text-emerald-400 truncate max-w-[100px]" title="17M9s5TbsJgvFtHGp8woq80sT3TkP6y_oclhguGUUkkA">
-                  17M9s5...kkA
+                <span>ซิงค์ล่าสุด {lastDbSyncTime}</span>
+                <span className="text-emerald-400 truncate max-w-[90px]" title="17M9s5TbsJgvFtHGp8woq80sT3TkP6y_oclhguGUUkkA">
+                  17M9s5...
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => syncDatabase()}
+                disabled={isDbSyncing}
+                className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition-colors shadow-sm disabled:opacity-50"
+                title="ซิงค์ข้อมูลเข้าระบบ / ฐานข้อมูล"
+              >
+                <Database className={`w-4 h-4 ${isDbSyncing ? 'animate-spin' : ''}`} />
+              </button>
               <button
                 onClick={() => setIsCollapsed(false)}
                 className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"

@@ -9,9 +9,11 @@ import {
   TrendingUp, 
   Compass, 
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Database
 } from 'lucide-react';
 import { WeatherData } from '../types/eoc';
+import { useEocData } from '../context/EocDataContext';
 
 interface SituationBannerProps {
   weather: WeatherData;
@@ -26,6 +28,7 @@ export const SituationBanner: React.FC<SituationBannerProps> = ({
   onClearDistrictFilter,
   onSelectTab
 }) => {
+  const { syncDatabase, isDbSyncing, lastDbSyncTime } = useEocData();
   return (
     <div className="bg-slate-900 border-b border-slate-800 text-slate-100 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
@@ -49,7 +52,7 @@ export const SituationBanner: React.FC<SituationBannerProps> = ({
 
         {/* Top Header Row with Status Badge & Slogan */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="px-3.5 py-1 rounded bg-amber-500/20 border border-amber-500/60 text-amber-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
               LEVEL 2 : PRE-ACTIVATE BCP
@@ -57,6 +60,17 @@ export const SituationBanner: React.FC<SituationBannerProps> = ({
             <span className="text-xs font-medium text-slate-300">
               สถานะ: <strong className="text-amber-300">เฝ้าระวัง : เตรียมพร้อมรับมือน้ำหลาก</strong>
             </span>
+
+            {/* Direct Database Sync Button */}
+            <button
+              onClick={() => syncDatabase()}
+              disabled={isDbSyncing}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950 text-emerald-300 hover:bg-emerald-900 border border-emerald-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              title="ซิงค์ข้อมูลผู้ป่วย 1,284 ราย, 13 รพ. และจุดตัดขาด เข้าสู่ฐานข้อมูลระบบ"
+            >
+              <Database className={`w-3.5 h-3.5 text-emerald-400 ${isDbSyncing ? 'animate-spin' : ''}`} />
+              <span>{isDbSyncing ? 'กำลังซิงค์ฐานข้อมูล...' : 'ซิงค์ฐานข้อมูล 2-WAY'}</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-4 text-xs text-slate-400">
@@ -65,7 +79,7 @@ export const SituationBanner: React.FC<SituationBannerProps> = ({
             </span>
             <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
               <Clock className="w-3.5 h-3.5 text-emerald-400" />
-              <span>GISTDA/ThaiWater อัปเดต: {weather.gistdaUpdateTimestamp}</span>
+              <span>ฐานข้อมูล: {lastDbSyncTime}</span>
             </div>
           </div>
         </div>
